@@ -90,6 +90,9 @@ export default function Home() {
     maxBodyLength: Infinity,
     url: 'https://oauth.pipedrive.com/oauth/token',
     headers: {
+      'Access-Control-Allow-Origin': '*',
+      "Access-Control-Allow-Headers": "x-requested-with, Content-Type, origin, authorization, accept, x-access-token",
+      "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,PATCH,OPTIONS",
       'Content-Type': 'application/x-www-form-urlencoded',
       'Authorization': authorizationHeader,
     },
