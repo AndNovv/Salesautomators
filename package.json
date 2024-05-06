@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@pipedrive/app-extensions-sdk": "^0.10.1",
     "@radix-ui/react-icons": "^1.3.0",
     "@radix-ui/react-popover": "^1.0.7",
     "@radix-ui/react-select": "^2.0.0",
@@ -18,6 +19,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
     "next": "14.2.3",
+    "pipedrive": "^22.6.1",
     "qs": "^6.12.1",
     "react": "^18",
     "react-day-picker": "^8.10.1",

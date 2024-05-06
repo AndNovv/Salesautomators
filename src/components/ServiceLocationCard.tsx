@@ -21,7 +21,6 @@ const ServiceLocationCard = ({ refs, setArea }: { refs: RefObject<HTMLInputEleme
     const submitForm = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         for (let i = 0; i < refs.length; i++) {
-            console.log(refs[i].current?.value)
             if (!refs[i].current?.value) {
                 refs[i].current?.focus()
                 break

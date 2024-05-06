@@ -7,6 +7,7 @@ import ScheduledCard from "@/components/ScheduledCard"
 import { Button } from "@/components/ui/button"
 import { AxiosResponse } from "axios"
 import { useSearchParams } from "next/navigation"
+import AppExtensionsSDK, { Command, Modal } from '@pipedrive/app-extensions-sdk';
 
 const axios = require('axios');
 const qs = require('qs');
@@ -14,6 +15,26 @@ const qs = require('qs');
 
 export default function Home() {
 
+  const [dealFields, setDealFields] = useState<{ name: string, key: string }[]>([])
+
+
+  // SDK detects identifier from URL and uses default custom UI size
+  const initializeSdk = () => {
+    setTimeout(async () => {
+      const sdk = await new AppExtensionsSDK({ identifier: '75c6d474-5478-4875-afc3-41b54166e4ae' })
+        .initialize({ size: { height: 500 } });
+
+      const { status } = await sdk.execute(Command.OPEN_MODAL, {
+        type: Modal.CUSTOM_MODAL,
+        action_id: '75c6d474-5478-4875-afc3-41b54166e4ae'
+      });
+      console.log(status)
+    })
+  }
+
+  useEffect(() => {
+    initializeSdk()
+  })
 
   // Client Details Data
   const firstNameRef = useRef<HTMLInputElement>(null)
@@ -53,70 +74,89 @@ export default function Home() {
   const allRefs = [...clientDetailsInputRefs, jobDescriptionRef, ...serviceLocationRefs, ...scheduldedRefs]
 
 
-  const printInformation = () => {
-    allRefs.forEach((ref) => console.log(ref.current?.value))
+  const [accessToken, setAccessToken] = useState<string | null>(null)
 
-    console.log(jobType)
-    console.log(jobSource)
-
-    console.log(area)
-
-    console.log(date)
-
-    console.log(technician)
-  }
-
-
-  const clientId = process.env.CLIENT_ID
-  const clientSecret = process.env.CLIENT_SECRET
-  const authorizationHeader = `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`;
-  const redirect_uri = process.env.BASE_URL
-
-  console.log(authorizationHeader)
 
   const searchParams = useSearchParams()
-  const code = searchParams.get('code')
+  const [code, setCode] = useState(searchParams.get('code'))
 
-  console.log(code)
+  useEffect(() => {
+    const getAccessToken = async () => {
 
-  const data = qs.stringify({
-    'grant_type': 'authorization_code',
-    'redirect_uri': redirect_uri,
-    'code': code
-  });
+      console.log('getToken')
+      try {
+        const response = await axios.post('/api/auth', { code });
+        setAccessToken(response.data.access_token)
+        const dealFieldsResponse: any = await axios.get('/api/dealFields', { headers: { 'Authorization': `Bearer ${response.data.access_token}` } });
+        const result = dealFieldsResponse.data.data.map((el: any) => ({ name: el.name, key: el.key }))
+        setDealFields(result)
+      } catch (error) {
+        console.error('Error:', error); // Handle errors
+      }
+    }
 
-  const config = {
-    method: 'post',
-    maxBodyLength: Infinity,
-    url: 'https://oauth.pipedrive.com/oauth/token',
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      "Access-Control-Allow-Headers": "x-requested-with, Content-Type, origin, authorization, accept, x-access-token",
-      "Access-Control-Allow-Methods": "GET,PUT,POST,DELETE,PATCH,OPTIONS",
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': authorizationHeader,
-    },
-    data: data
-  };
+    getAccessToken()
+
+  }, [code])
+
+  console.log(dealFields)
 
 
-  async function exchangeToken(): Promise<void> {
-    axios.request(config)
-      .then((response: AxiosResponse) => {
-        console.log(JSON.stringify(response.data));
-      })
-      .catch((error: any) => {
-        console.log(error);
-      })
+  const getUserInfo = async () => {
+    console.log("getUserInfo")
+    try {
+      const response = await axios.get('/api/user', { headers: { 'Authorization': `Bearer ${accessToken}` } });
+      console.log(response.data)
+    } catch (error) {
+      console.error('Error:', error); // Handle errors
+    }
   }
 
-  // useEffect(() => {
-  //   exchangeToken();
-  // }, [])
+  const createJob = async () => {
 
-  const testApi = () => {
-    exchangeToken()
+    const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Adding 1 because months are zero-based
+    const day = date.getDate().toString().padStart(2, '0');
+    const year = date.getFullYear();
+
+    const formattedDate = `${month}:${day}:${year}`;
+
+    console.log(dealFields)
+
+    const allInputValues = {
+      [dealFields[dealFields.findIndex(el => el.name === 'First Name')].key]: allRefs[0].current?.value,
+      [dealFields[dealFields.findIndex(el => el.name === 'Last Name')].key]: allRefs[1].current?.value,
+      [dealFields[dealFields.findIndex(el => el.name === 'Phone')].key]: allRefs[2].current?.value,
+      [dealFields[dealFields.findIndex(el => el.name === 'Email')].key]: allRefs[3].current?.value,
+
+      [dealFields[dealFields.findIndex(el => el.name === 'Job Type')].key]: jobType,
+      [dealFields[dealFields.findIndex(el => el.name === 'Job Source')].key]: jobSource,
+      [dealFields[dealFields.findIndex(el => el.name === 'Job Description')].key]: allRefs[4].current?.value,
+
+      [dealFields[dealFields.findIndex(el => el.name === 'Service Address')].key]: allRefs[5].current?.value,
+      [dealFields[dealFields.findIndex(el => el.name === 'Service City')].key]: allRefs[6].current?.value,
+      [dealFields[dealFields.findIndex(el => el.name === 'Service State')].key]: allRefs[7].current?.value,
+      [dealFields[dealFields.findIndex(el => el.name === 'Service Zip code')].key]: allRefs[8].current?.value,
+      [dealFields[dealFields.findIndex(el => el.name === 'Service Area')].key]: area,
+
+      [dealFields[dealFields.findIndex(el => el.name === 'Schedulded Start date')].key]: formattedDate,
+      [dealFields[dealFields.findIndex(el => el.name === 'Schedulded Start time')].key]: allRefs[9].current?.value,
+      [dealFields[dealFields.findIndex(el => el.name === 'Schedulded End time')].key]: allRefs[10].current?.value,
+      [dealFields[dealFields.findIndex(el => el.name === 'Schedulded Technician')].key]: technician,
+
+    }
+
+
+
+    console.log(allInputValues)
+
+    try {
+      const response = await axios.get('/api/createJob', { headers: { 'Authorization': `Bearer ${accessToken}` }, params: allInputValues });
+      console.log(response.data)
+    } catch (error) {
+      console.error('Error:', error); // Handle errors
+    }
   }
+
 
   return (
     <main className="pt-10 md:px-20 lg:px-60">
@@ -128,8 +168,8 @@ export default function Home() {
       </div>
 
       <div className="flex justify-center gap-4 mt-8 w-full">
-        <Button variant={'default'} size={'lg'} onClick={testApi}>Create Job</Button>
-        <Button variant={'outline'} size={'lg'} onClick={printInformation}>Save Info</Button>
+        <Button variant={'default'} size={'lg'} onClick={createJob}>Create Job</Button>
+        <Button variant={'outline'} size={'lg'} onClick={getUserInfo}>Save Info</Button>
       </div>
 
     </main >
