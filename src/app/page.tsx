@@ -19,22 +19,18 @@ export default function Home() {
 
 
   // SDK detects identifier from URL and uses default custom UI size
-  const initializeSdk = () => {
-    setTimeout(async () => {
-      const sdk = await new AppExtensionsSDK({ identifier: '75c6d474-5478-4875-afc3-41b54166e4ae' })
-        .initialize({ size: { height: 500 } });
-
-      const { status } = await sdk.execute(Command.OPEN_MODAL, {
-        type: Modal.CUSTOM_MODAL,
-        action_id: '75c6d474-5478-4875-afc3-41b54166e4ae'
-      });
-      console.log(status)
-    })
-  }
-
   useEffect(() => {
-    initializeSdk()
-  })
+    const initializeSDK = async () => {
+      try {
+        // const sdk = await new AppExtensionsSDK().initialize();
+        const sdk = await new AppExtensionsSDK({}).initialize({ size: { height: 650, width: 1000 } });
+      } catch (error) {
+        console.log("Failed to initialize AppExtensionsSDK:", error);
+      }
+    };
+
+    initializeSDK();
+  }, []);
 
   // Client Details Data
   const firstNameRef = useRef<HTMLInputElement>(null)
@@ -159,7 +155,7 @@ export default function Home() {
 
 
   return (
-    <main className="pt-10 md:px-20 lg:px-60">
+    <main className="pt-2 md:px-20 lg:px-60 w-full h-full">
       <div className="grid gap-4 grid-cols-2">
         <ClientDetailsCard refs={clientDetailsInputRefs} />
         <JobDetailsCard setJobType={setJobType} setJobSource={setJobSource} jobDescriptionRef={jobDescriptionRef} />
